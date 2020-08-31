@@ -3,7 +3,7 @@
   <POU Name="MAIN" Id="{749b57ec-766c-486f-8c5f-78c0399fac58}" SpecialFunc="None">
     <Declaration><![CDATA[PROGRAM MAIN
 VAR
-		AdsRead:						ADSREADEX;
+	AdsRead:						ADSREADEX;
 	ADSReadWrite:					ADSRDWRT;
 	SymbolUploadInfo:				TAdsSymbolUploadInfo;
 	DestBuffer:						ARRAY [0..100] OF BYTE;
