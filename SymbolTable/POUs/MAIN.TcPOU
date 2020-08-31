@@ -9,7 +9,8 @@ VAR
 	DestBuffer:						ARRAY [0..100] OF BYTE;
 	SrcBuffer:						STRING;
 	pTypeInfo:						POINTER TO BYTE;
-	ReadSymbolTableState:			UDINT;
+	ReadSymbolTableState:			TReadSymbolTableState;
+	ReadSymbolTableStatePrev:		TReadSymbolTableState;
 	start:							BOOL;
 	pAdsDatatypeEntry:				POINTER TO AdsSymbolEntry;
 	pSubAdsDatatypeEntry:			POINTER TO AdsSymbolEntry;
@@ -26,7 +27,7 @@ END_VAR
 ]]></Declaration>
     <Implementation>
       <ST><![CDATA[CASE ReadSymbolTableState OF
-	0:
+	RS_WAIT_FOR_START:
 		IF(start = TRUE)THEN 	
 			start := FALSE;
 			AdsRead(
@@ -37,18 +38,18 @@ END_VAR
 				LEN := SIZEOF(SymbolUploadInfo),
 				READ := TRUE
 					);
-			ReadSymbolTableState := 1;
+			ReadSymbolTableState := RS_READ_SYMBOL_UPLOAD_INFO;
 		END_IF
 		
-	1:	
+	RS_READ_SYMBOL_UPLOAD_INFO:	
 		AdsRead();
 		IF(AdsRead.BUSY = FALSE)THEN
 			AdsRead(Read := FALSE);
 			pTypeInfo := __NEW(BYTE, SymbolUploadInfo.nSymSize);			
-			ReadSymbolTableState := 2;	
+			ReadSymbolTableState := RS_READ_SYMBOL_UPLOAD_START;	
 		END_IF	
 		
-	2:
+	RS_READ_SYMBOL_UPLOAD_START:
 		AdsRead();
 		IF(AdsRead.BUSY = FALSE)THEN
 			AdsRead(
@@ -59,20 +60,20 @@ END_VAR
 				LEN := SymbolUploadInfo.nSymSize,
 				READ := TRUE
 					);
-			ReadSymbolTableState := 3;
+			ReadSymbolTableState := RS_READ_SYMBOL_UPLOAD;
 		END_IF
 		
-	3: 		
+	RS_READ_SYMBOL_UPLOAD: 		
 	
 		AdsRead();
 		IF(AdsRead.BUSY = FALSE)THEN
 			pAdsDatatypeEntry := pTypeInfo;
-			ReadSymbolTableState := 4;		
+			i := 0;
+			ReadSymbolTableState := RS_PROCESS_SYMBOL_UPLOAD;		
 		END_IF
 			
-	4:
-		FOR i := 0 TO SymbolUploadInfo.nSymbols-1 DO
-					
+	RS_PROCESS_SYMBOL_UPLOAD:
+		IF(i< SymbolUploadInfo.nSymbols-1)THEN
 			pNameStringPointer := pAdsDatatypeEntry + 30 (* Sizeof(AdsDatatypeEntry) geeft net wat teveel*);
 			NameString := pNameStringPointer^;
 			LogMsg(NameString);
@@ -88,10 +89,14 @@ END_VAR
 				TracePrintString(SubNameString);
 			END_IF*)			
 			pAdsDatatypeEntry := pAdsDatatypeEntry + pAdsDatatypeEntry^.entryLength;
-		END_FOR
-		ReadSymbolTableState := 5;
+			i := i + 1;
+		ELSE
+			ReadSymbolTableState := RS_DONE;
+		END_IF
 		
 		
+	RS_DONE:
+		;		
 
 100:
 	ADSReadWrite(
@@ -177,11 +182,22 @@ END_CASE
 
 *)
 
-
-
+LogStateChange();
+ReadSymbolTableStatePrev := ReadSymbolTableState;
 
 gTime := gTime + 1;
 ]]></ST>
     </Implementation>
+    <Method Name="LogStateChange" Id="{3e911aee-3a56-48b2-acf3-e97822254fc6}">
+      <Declaration><![CDATA[METHOD LogStateChange : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF(ReadSymbolTableState <> ReadSymbolTableStatePrev)THEN
+	LogMsg(concat(concat(TO_STRING(ReadSymbolTableStatePrev), ' => '), TO_STRING(ReadSymbolTableState)));
+END_IF]]></ST>
+      </Implementation>
+    </Method>
   </POU>
 </TcPlcObject>

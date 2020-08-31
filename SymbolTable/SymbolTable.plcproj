@@ -14,6 +14,9 @@
     <LibraryReferences>{2a4e069a-5db7-4c93-b203-5f46ba9e61ec}</LibraryReferences>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="DUTs\TReadSymbolTableState.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="GVLs\GVL.TcGVL">
       <SubType>Code</SubType>
       <LinkAlways>true</LinkAlways>
