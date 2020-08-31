@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+  <DUT Name="TReadSymbolTableState" Id="{161c7e9b-c20e-48cc-a5e1-e506835a0204}">
+    <Declaration><![CDATA[{attribute 'to_string'}
+TYPE TReadSymbolTableState :
+(
+	RS_WAIT_FOR_START,
+	RS_READ_SYMBOL_UPLOAD_INFO,
+	RS_READ_SYMBOL_UPLOAD,
+	RS_PROCESS_SYMBOL_UPLOAD,
+	RS_DONE
+	
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

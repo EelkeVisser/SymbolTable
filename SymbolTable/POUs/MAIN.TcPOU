@@ -11,13 +11,16 @@ VAR
 	pTypeInfo:						POINTER TO BYTE;
 	ReadSymbolTableState:			TReadSymbolTableState;
 	ReadSymbolTableStatePrev:		TReadSymbolTableState;
+	StateEntry:						BOOL := TRUE;
 	start:							BOOL;
 	pAdsDatatypeEntry:				POINTER TO AdsSymbolEntry;
 	pSubAdsDatatypeEntry:			POINTER TO AdsSymbolEntry;
 	pNameStringPointer:				POINTER TO STRING;
 	pTypeStringPointer:				POINTER TO STRING;
+	pCommentStringPointer:			POINTER TO STRING;
 	NameString:						STRING;
 	TypeString:						STRING;
+	CommentString:					STRING;
 	pSubNameStringPointer:			POINTER TO STRING;
 	SubNameString:					STRING;
 	iterate:						BOOL;
@@ -29,58 +32,55 @@ END_VAR
       <ST><![CDATA[CASE ReadSymbolTableState OF
 	RS_WAIT_FOR_START:
 		IF(start = TRUE)THEN 	
-			start := FALSE;
-			AdsRead(
-				PORT := 851, 
+			start := FALSE;			
+			ReadSymbolTableState := RS_READ_SYMBOL_UPLOAD_INFO;
+		END_IF
+		
+	RS_READ_SYMBOL_UPLOAD_INFO:	
+		
+		AdsRead(PORT := 851, 
 				DESTADDR := ADR(SymbolUploadInfo),
 				IDXGRP := 16#F00C,
 				IDXOFFS := 0,
 				LEN := SIZEOF(SymbolUploadInfo),
 				READ := TRUE
-					);
-			ReadSymbolTableState := RS_READ_SYMBOL_UPLOAD_INFO;
-		END_IF
-		
-	RS_READ_SYMBOL_UPLOAD_INFO:	
-		AdsRead();
+				);
 		IF(AdsRead.BUSY = FALSE)THEN
 			AdsRead(Read := FALSE);
 			pTypeInfo := __NEW(BYTE, SymbolUploadInfo.nSymSize);			
-			ReadSymbolTableState := RS_READ_SYMBOL_UPLOAD_START;	
+			ReadSymbolTableState := RS_READ_SYMBOL_UPLOAD;	
 		END_IF	
 		
-	RS_READ_SYMBOL_UPLOAD_START:
-		AdsRead();
-		IF(AdsRead.BUSY = FALSE)THEN
-			AdsRead(
-				PORT := 851, 
+	RS_READ_SYMBOL_UPLOAD: 			
+		AdsRead(PORT := 851, 
 				DESTADDR := pTypeInfo,
 				IDXGRP := 16#F00B,
 				IDXOFFS := 0,
 				LEN := SymbolUploadInfo.nSymSize,
 				READ := TRUE
-					);
-			ReadSymbolTableState := RS_READ_SYMBOL_UPLOAD;
-		END_IF
-		
-	RS_READ_SYMBOL_UPLOAD: 		
-	
-		AdsRead();
+				);
 		IF(AdsRead.BUSY = FALSE)THEN
-			pAdsDatatypeEntry := pTypeInfo;
-			i := 0;
+			AdsRead(Read := FALSE);						
 			ReadSymbolTableState := RS_PROCESS_SYMBOL_UPLOAD;		
 		END_IF
 			
 	RS_PROCESS_SYMBOL_UPLOAD:
+		IF(StateEntry)THEN
+			i := 0;
+			pAdsDatatypeEntry := pTypeInfo;
+		END_IF
 		IF(i< SymbolUploadInfo.nSymbols-1)THEN
 			pNameStringPointer := pAdsDatatypeEntry + 30 (* Sizeof(AdsDatatypeEntry) geeft net wat teveel*);
 			NameString := pNameStringPointer^;
-			LogMsg(NameString);
+			//LogMsg(NameString);
 			
- 			pTypeStringPointer := + pNameStringPointer + pAdsDatatypeEntry^.nameLength + 1;
+ 			pTypeStringPointer := pNameStringPointer + pAdsDatatypeEntry^.nameLength + 1;
 			TypeString := pTypeStringPointer^;
-			LogMsg(TypeString);
+			
+			pCommentStringPointer := pTypeStringPointer + pAdsDatatypeEntry^.typeLength + 1;
+			CommentString := pCommentStringPointer^;
+			
+			LogMsg(concat(concat(concat(concat(NameString,' '), TypeString), ' '), CommentString));
 (*			IF(pAdsDatatypeEntry^.subItems > 0)THEN
 				//Sub item:
 				pSubAdsDatatypeEntry := pNameStringPointer + pAdsDatatypeEntry^.nameLength+1 + pAdsDatatypeEntry^.typeLength+1 + pAdsDatatypeEntry^.commentLength+1 + 8; 
@@ -183,7 +183,7 @@ END_CASE
 *)
 
 LogStateChange();
-ReadSymbolTableStatePrev := ReadSymbolTableState;
+
 
 gTime := gTime + 1;
 ]]></ST>
@@ -196,7 +196,11 @@ END_VAR
       <Implementation>
         <ST><![CDATA[IF(ReadSymbolTableState <> ReadSymbolTableStatePrev)THEN
 	LogMsg(concat(concat(TO_STRING(ReadSymbolTableStatePrev), ' => '), TO_STRING(ReadSymbolTableState)));
-END_IF]]></ST>
+	StateEntry := TRUE;
+ELSE
+	StateEntry := FALSE;
+END_IF
+ReadSymbolTableStatePrev := ReadSymbolTableState;]]></ST>
       </Implementation>
     </Method>
   </POU>
