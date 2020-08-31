@@ -9,7 +9,7 @@ VAR
 END_VAR
 ]]></Declaration>
     <Implementation>
-      <ST><![CDATA[LogMsg := ADSLOGSTR( ADSLOG_MSGTYPE_HINT OR ADSLOG_MSGTYPE_LOG, 'PLC: %s', aString);]]></ST>
+      <ST><![CDATA[LogMsg := ADSLOGSTR( ADSLOG_MSGTYPE_HINT OR ADSLOG_MSGTYPE_LOG, 'PLC: %s', concat(concat(UDINT_to_STRING(gTime), ': '), aString));]]></ST>
     </Implementation>
   </POU>
 </TcPlcObject>
