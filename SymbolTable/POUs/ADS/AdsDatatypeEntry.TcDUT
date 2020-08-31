@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+  <DUT Name="AdsDatatypeEntry" Id="{968e1443-278c-4851-b8ae-192b37687a90}">
+    <Declaration><![CDATA[TYPE AdsDatatypeEntry :
+STRUCT
+	
+	entryLength:	UDINT;		  // length of complete datatype entry
+	version:		UDINT;		  // version of datatype structure
+	hashValue:    	UDINT;		// hashValue of datatype to compare datatypes
+									// code offset to getter method
+	
+	typeHashValue:	UDINT;		// hashValue of base type
+									// code offset to setter method
+	
+	size:			UDINT;		  // size of datatype ( in bytes )
+	offs:			UDINT;		  // offs of dataitem in parent datatype ( in bytes )
+	dataType:		UDINT;		  // adsDataType of symbol (if alias)
+	flags:			UDINT;		  //
+	nameLength:		UINT;		  // length of datatype name (excl. \0)
+	typeLength:		UINT;		  // length of dataitem type name (excl. \0)
+	commentLength:	UINT;		  // length of comment (excl. \0)
+	arrayDim:		UINT;		  //
+	subItems:		UINT;		  //
+	// ADS_INT8		name[];			// name of datatype with terminating \0
+	// ADS_INT8		type[];			// type name of dataitem with terminating \0
+	// ADS_INT8		comment[];		// comment of datatype with terminating \0
+	// AdsDatatypeArrayInfo	array[];
+	// AdsDatatypeEntry		subItems[];
+	// GUID			typeGuid;		// typeGuid of this type if ADSDATATYPEFLAG_TYPEGUID is set
+	// NUINT8	copyMask[];		// "size" bytes containing 0xff or 0x00 - 0x00 means ignore byte (ADSIGRP_SYM_VALBYHND_WITHMASK)
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

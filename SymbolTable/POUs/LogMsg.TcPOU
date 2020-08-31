@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+  <POU Name="LogMsg" Id="{6112d742-0fe6-4781-8448-faacb9a7a7f4}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION LogMsg : DINT
+VAR_INPUT
+	aString:	STRING;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[LogMsg := ADSLOGSTR( ADSLOG_MSGTYPE_HINT OR ADSLOG_MSGTYPE_LOG, 'PLC: %s', aString);]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

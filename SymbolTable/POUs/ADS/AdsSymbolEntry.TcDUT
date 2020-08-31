@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+  <DUT Name="AdsSymbolEntry" Id="{0ed4b73e-e904-4b7c-b62f-78d6deddf667}">
+    <Declaration><![CDATA[TYPE AdsSymbolEntry :
+STRUCT	
+	entryLength:		UDINT;	// length of complete symbol entry
+	iGroup:				UDINT;			// indexGroup of symbol: input, output etc.
+	iOffs:				UDINT;			// indexOffset of symbol
+	size:				UDINT;			// size of symbol ( in bytes, 0 = bit )
+	dataType:			UDINT;		// adsDataType of symbol
+	flags:				UDINT;			// see above
+	nameLength:			UINT;		// length of symbol name (excl. \0)
+	typeLength:			UINT;		// length of type name (excl. \0)
+	commentLength:		UINT;	// length of comment (excl. \0)
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

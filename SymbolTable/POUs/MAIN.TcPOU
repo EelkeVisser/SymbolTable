@@ -1,12 +1,186 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4022.18">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
   <POU Name="MAIN" Id="{749b57ec-766c-486f-8c5f-78c0399fac58}" SpecialFunc="None">
     <Declaration><![CDATA[PROGRAM MAIN
 VAR
+		AdsRead:						ADSREADEX;
+	ADSReadWrite:					ADSRDWRT;
+	SymbolUploadInfo:				TAdsSymbolUploadInfo;
+	DestBuffer:						ARRAY [0..100] OF BYTE;
+	SrcBuffer:						STRING;
+	pTypeInfo:						POINTER TO BYTE;
+	ReadSymbolTableState:			UDINT;
+	start:							BOOL;
+	pAdsDatatypeEntry:				POINTER TO AdsSymbolEntry;
+	pSubAdsDatatypeEntry:			POINTER TO AdsSymbolEntry;
+	pNameStringPointer:				POINTER TO STRING;
+	pTypeStringPointer:				POINTER TO STRING;
+	NameString:						STRING;
+	TypeString:						STRING;
+	pSubNameStringPointer:			POINTER TO STRING;
+	SubNameString:					STRING;
+	iterate:						BOOL;
+	i:								UDINT;
+
 END_VAR
 ]]></Declaration>
     <Implementation>
-      <ST><![CDATA[gTime := gTime + 1;
+      <ST><![CDATA[CASE ReadSymbolTableState OF
+	0:
+		IF(start = TRUE)THEN 	
+			start := FALSE;
+			AdsRead(
+				PORT := 851, 
+				DESTADDR := ADR(SymbolUploadInfo),
+				IDXGRP := 16#F00C,
+				IDXOFFS := 0,
+				LEN := SIZEOF(SymbolUploadInfo),
+				READ := TRUE
+					);
+			ReadSymbolTableState := 1;
+		END_IF
+		
+	1:	
+		AdsRead();
+		IF(AdsRead.BUSY = FALSE)THEN
+			AdsRead(Read := FALSE);
+			pTypeInfo := __NEW(BYTE, SymbolUploadInfo.nSymSize);			
+			ReadSymbolTableState := 2;	
+		END_IF	
+		
+	2:
+		AdsRead();
+		IF(AdsRead.BUSY = FALSE)THEN
+			AdsRead(
+				PORT := 851, 
+				DESTADDR := pTypeInfo,
+				IDXGRP := 16#F00B,
+				IDXOFFS := 0,
+				LEN := SymbolUploadInfo.nSymSize,
+				READ := TRUE
+					);
+			ReadSymbolTableState := 3;
+		END_IF
+		
+	3: 		
+	
+		AdsRead();
+		IF(AdsRead.BUSY = FALSE)THEN
+			pAdsDatatypeEntry := pTypeInfo;
+			ReadSymbolTableState := 4;		
+		END_IF
+			
+	4:
+		FOR i := 0 TO SymbolUploadInfo.nSymbols-1 DO
+					
+			pNameStringPointer := pAdsDatatypeEntry + 30 (* Sizeof(AdsDatatypeEntry) geeft net wat teveel*);
+			NameString := pNameStringPointer^;
+			LogMsg(NameString);
+			
+ 			pTypeStringPointer := + pNameStringPointer + pAdsDatatypeEntry^.nameLength + 1;
+			TypeString := pTypeStringPointer^;
+			LogMsg(TypeString);
+(*			IF(pAdsDatatypeEntry^.subItems > 0)THEN
+				//Sub item:
+				pSubAdsDatatypeEntry := pNameStringPointer + pAdsDatatypeEntry^.nameLength+1 + pAdsDatatypeEntry^.typeLength+1 + pAdsDatatypeEntry^.commentLength+1 + 8; 
+				pSubNameStringPointer := pSubAdsDatatypeEntry + 42 (* Sizeof(AdsDatatypeEntry) geeft net wat teveel*);
+				SubNameString := pSubNameStringPointer^;
+				TracePrintString(SubNameString);
+			END_IF*)			
+			pAdsDatatypeEntry := pAdsDatatypeEntry + pAdsDatatypeEntry^.entryLength;
+		END_FOR
+		ReadSymbolTableState := 5;
+		
+		
+
+100:
+	ADSReadWrite(
+		PORT := 851,
+		SRCADDR :=  ADR(SrcBuffer),
+		DESTADDR := ADR(DestBuffer)
+			);
+END_CASE
+(*
+CASE ReadSymbolTableState OF
+	0:
+		IF(start = TRUE)THEN 	
+			start := FALSE;
+			AdsRead(
+				PORT := 851, 
+				DESTADDR := ADR(SymbolUploadInfo),
+				IDXGRP := 16#F00F,
+				IDXOFFS := 0,
+				LEN := SIZEOF(SymbolUploadInfo),
+				READ := TRUE
+					);
+			ReadSymbolTableState := 1;
+		END_IF
+		
+	1:	
+		AdsRead();
+		IF(AdsRead.BUSY = FALSE)THEN
+			AdsRead(Read := FALSE);
+			pTypeInfo := __NEW(BYTE, SymbolUploadInfo.nDatatypeSize);			
+			ReadSymbolTableState := 2;	
+		END_IF	
+		
+	2:
+		AdsRead();
+		IF(AdsRead.BUSY = FALSE)THEN
+			AdsRead(
+				PORT := 851, 
+				DESTADDR := pTypeInfo,
+				IDXGRP := 16#F00E,
+				IDXOFFS := 0,
+				LEN := SymbolUploadInfo.nDatatypeSize,
+				READ := TRUE
+					);
+			ReadSymbolTableState := 3;
+		END_IF
+		
+	3: 		
+		AdsRead();
+		IF(AdsRead.BUSY = FALSE)THEN
+			pAdsDatatypeEntry := pTypeInfo;
+			ReadSymbolTableState := 4;
+		END_IF
+			
+	4:
+		FOR i := 0 TO SymbolUploadInfo.nDatatypes DO
+					
+			pNameStringPointer := pAdsDatatypeEntry + 42 (* Sizeof(AdsDatatypeEntry) geeft net wat teveel*);
+			NameString := pNameStringPointer^;
+			TracePrintString(NameString);
+			IF(NameString = 'TSymbolUploadInfo')THEN
+				iterate := FALSE;	
+			END_IF
+			IF(pAdsDatatypeEntry^.subItems > 0)THEN
+				//Sub item:
+				pSubAdsDatatypeEntry := pNameStringPointer + pAdsDatatypeEntry^.nameLength+1 + pAdsDatatypeEntry^.typeLength+1 + pAdsDatatypeEntry^.commentLength+1 + 8; 
+				pSubNameStringPointer := pSubAdsDatatypeEntry + 42 (* Sizeof(AdsDatatypeEntry) geeft net wat teveel*);
+				SubNameString := pSubNameStringPointer^;
+				TracePrintString(SubNameString);
+			END_IF			
+			pAdsDatatypeEntry := pAdsDatatypeEntry + pAdsDatatypeEntry^.entryLength;
+		END_FOR
+		ReadSymbolTableState := 5;
+		
+		
+
+100:
+	ADSReadWrite(
+		PORT := 851,
+		SRCADDR :=  ADR(SrcBuffer),
+		DESTADDR := ADR(DestBuffer)
+			);
+END_CASE
+
+*)
+
+
+
+
+gTime := gTime + 1;
 ]]></ST>
     </Implementation>
   </POU>
