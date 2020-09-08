@@ -15,14 +15,14 @@ Message		08-Sep-20 16:47:26 440 ms  | 'PlcTask' (351): PLC: 392: 6928: RS_PROCES
 ```
 If successfull it will end in the state RS_DONE.
 
-In the state RS_PROCESS_SYMBOL_UPLOAD it will print all variables used and their type. Here are two pointers shown that point to the type AdsSymbolEntry:
+In the state RS_PROCESS_SYMBOL_UPLOAD it will print all variables used and their type. For example, here are two pointers shown that point to the type AdsSymbolEntry:
 
 ```
 Message		08-Sep-20 16:47:26 356 ms  | 'PlcTask' (351): PLC: 161: 6844: MAIN.pAdsSymbolEntry POINTER TO AdsSymbolEntry
 Message		08-Sep-20 16:47:26 361 ms  | 'PlcTask' (351): PLC: 166: 6849: MAIN.pSubAdsSymbolEntry POINTER TO AdsSymbolEntry
 ```
 
-In the RS_PROCESS_DATA_UPLOAD state it will print all the types that exist in the project. For instance the type AdsSymbolEntry, which contains 9 subitems:
+In the RS_PROCESS_DATA_UPLOAD state it will print all the types that exist in the project. For example, the type AdsSymbolEntry, which contains 9 subitems:
 
 ```
 Message		08-Sep-20 16:47:26 387 ms  | 'PlcTask' (351): PLC: 237: 6875: AdsSymbolEntry
