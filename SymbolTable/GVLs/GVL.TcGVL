@@ -1,8 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4022.18">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
   <GVL Name="GVL" Id="{ade82f02-21df-4b1e-b396-2c260dfaf950}">
     <Declaration><![CDATA[VAR_GLOBAL
 	gTime:	UDINT;
+	gTraceNumber:	UDINT;
 END_VAR]]></Declaration>
   </GVL>
 </TcPlcObject>

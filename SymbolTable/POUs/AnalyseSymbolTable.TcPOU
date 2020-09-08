@@ -1,0 +1,67 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
+  <POU Name="AnalyseSymbolTable" Id="{f8e045e9-0c43-49fc-ab1c-d08f218803d4}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AnalyseSymbolTable
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[]]></ST>
+    </Implementation>
+    <Method Name="AnalyseAdsDatatpe" Id="{bc395634-dc84-40b1-91bb-79e89cb27727}">
+      <Declaration><![CDATA[{attribute 'estimated-stack-usage' := 100000}
+METHOD AnalyseAdsDatatpe : BOOL
+VAR_INPUT
+	pAdsDatatypeEntry:	POINTER TO AdsDatatypeEntry;
+	PrependString:		STRING;
+END_VAR
+VAR
+	pSubAdsDatatypeEntry:			POINTER TO AdsDatatypeEntry;
+	pNameStringPointer:				POINTER TO STRING;
+	pTypeStringPointer:				POINTER TO STRING;
+	pCommentStringPointer:			POINTER TO STRING;
+	NameString:						STRING;
+	TypeString:						STRING;
+	CommentString:					STRING;
+	i:								UDINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[pNameStringPointer := pAdsDatatypeEntry + 42 (* Sizeof(AdsDatatypeEntry) geeft net wat teveel*);
+NameString := pNameStringPointer^;
+//LogMsg(NameString);
+
+pTypeStringPointer := pNameStringPointer + pAdsDatatypeEntry^.nameLength + 1;
+TypeString := pTypeStringPointer^;
+
+pCommentStringPointer := pTypeStringPointer + pAdsDatatypeEntry^.typeLength + 1;
+CommentString := pCommentStringPointer^;
+
+pSubAdsDatatypeEntry := pCommentStringPointer + pAdsDatatypeEntry^.commentLength + 1;
+
+pSubAdsDatatypeEntry := pSubAdsDatatypeEntry + pAdsDatatypeEntry^.arrayDim * 16;
+
+LogMsg(concat(concat(concat(concat(concat(PrependString, NameString),' '), TypeString), ' '), CommentString));
+
+IF(pAdsDatatypeEntry^.arrayDim > 0)THEN
+	LogMsg(concat(concat(PrependString,'Array dimension: '), TO_STRING(pAdsDatatypeEntry^.arrayDim)));
+END_IF	
+
+IF(pAdsDatatypeEntry^.subItems > 0)THEN
+	//Sub item:
+	LogMsg(concat(concat(PrependString,'Amount of Subitems: '), TO_STRING(pAdsDatatypeEntry^.subItems)));
+	FOR i := 0 TO pAdsDatatypeEntry^.subItems-1 DO
+		THIS^.AnalyseAdsDatatpe(pSubAdsDatatypeEntry, '  ');
+		pSubAdsDatatypeEntry := pSubAdsDatatypeEntry + pSubAdsDatatypeEntry^.entryLength;
+	END_FOR
+
+END_IF	
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

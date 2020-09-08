@@ -5,7 +5,7 @@
 VAR
 	AdsRead:						ADSREADEX;
 	ADSReadWrite:					ADSRDWRT;
-	SymbolUploadInfo:				TAdsSymbolUploadInfo;
+	SymbolUploadInfo:				AdsSymbolUploadInfo;
 	DestBuffer:						ARRAY [0..100] OF BYTE;
 	SrcBuffer:						STRING;
 	pTypeInfo:						POINTER TO BYTE;
@@ -13,8 +13,8 @@ VAR
 	ReadSymbolTableStatePrev:		TReadSymbolTableState;
 	StateEntry:						BOOL := TRUE;
 	start:							BOOL;
-	pAdsDatatypeEntry:				POINTER TO AdsSymbolEntry;
-	pSubAdsDatatypeEntry:			POINTER TO AdsSymbolEntry;
+	pAdsSymbolEntry:				POINTER TO AdsSymbolEntry;
+	pSubAdsSymbolEntry:				POINTER TO AdsSymbolEntry;
 	pNameStringPointer:				POINTER TO STRING;
 	pTypeStringPointer:				POINTER TO STRING;
 	pCommentStringPointer:			POINTER TO STRING;
@@ -26,6 +26,13 @@ VAR
 	iterate:						BOOL;
 	i:								UDINT;
 
+	SymbolUploadInfo2:				AdsSymbolUploadInfo2;
+	pDataInfo:						POINTER TO BYTE;
+	pAdsDatatypeEntry:				POINTER TO AdsDatatypeEntry;
+	pSubAdsDatatypeEntry:			POINTER TO AdsDatatypeEntry;
+	AnalyseSymbolTable:				AnalyseSymbolTable;
+	
+	
 END_VAR
 ]]></Declaration>
     <Implementation>
@@ -67,33 +74,71 @@ END_VAR
 	RS_PROCESS_SYMBOL_UPLOAD:
 		IF(StateEntry)THEN
 			i := 0;
-			pAdsDatatypeEntry := pTypeInfo;
+			pAdsSymbolEntry := pTypeInfo;
 		END_IF
 		IF(i< SymbolUploadInfo.nSymbols-1)THEN
-			pNameStringPointer := pAdsDatatypeEntry + 30 (* Sizeof(AdsDatatypeEntry) geeft net wat teveel*);
+			pNameStringPointer := pAdsSymbolEntry + 30 (* Sizeof(AdsDatatypeEntry) geeft net wat teveel*);
 			NameString := pNameStringPointer^;
 			//LogMsg(NameString);
 			
- 			pTypeStringPointer := pNameStringPointer + pAdsDatatypeEntry^.nameLength + 1;
+ 			pTypeStringPointer := pNameStringPointer + pAdsSymbolEntry^.nameLength + 1;
 			TypeString := pTypeStringPointer^;
 			
-			pCommentStringPointer := pTypeStringPointer + pAdsDatatypeEntry^.typeLength + 1;
+			pCommentStringPointer := pTypeStringPointer + pAdsSymbolEntry^.typeLength + 1;
 			CommentString := pCommentStringPointer^;
 			
 			LogMsg(concat(concat(concat(concat(NameString,' '), TypeString), ' '), CommentString));
-(*			IF(pAdsDatatypeEntry^.subItems > 0)THEN
-				//Sub item:
-				pSubAdsDatatypeEntry := pNameStringPointer + pAdsDatatypeEntry^.nameLength+1 + pAdsDatatypeEntry^.typeLength+1 + pAdsDatatypeEntry^.commentLength+1 + 8; 
-				pSubNameStringPointer := pSubAdsDatatypeEntry + 42 (* Sizeof(AdsDatatypeEntry) geeft net wat teveel*);
-				SubNameString := pSubNameStringPointer^;
-				TracePrintString(SubNameString);
-			END_IF*)			
-			pAdsDatatypeEntry := pAdsDatatypeEntry + pAdsDatatypeEntry^.entryLength;
+	
+			pAdsSymbolEntry := pAdsSymbolEntry + pAdsSymbolEntry^.entryLength;
 			i := i + 1;
+		ELSE
+			ReadSymbolTableState := RS_READ_SYMBOL_UPLOAD_INFO2;
+		END_IF
+		
+
+	RS_READ_SYMBOL_UPLOAD_INFO2:
+		AdsRead(
+			PORT := 851, 
+			DESTADDR := ADR(SymbolUploadInfo2),
+			IDXGRP := 16#F00F,
+			IDXOFFS := 0,
+			LEN := SIZEOF(SymbolUploadInfo2),
+			READ := TRUE);
+			
+		IF(AdsRead.BUSY = FALSE)THEN
+			AdsRead(Read := FALSE);
+			pDataInfo := __NEW(BYTE, SymbolUploadInfo2.nDatatypeSize);			
+			ReadSymbolTableState := RS_READ_DATA_TYPE_UPLOAD;	
+		END_IF	
+		
+		
+	RS_READ_DATA_TYPE_UPLOAD:
+		AdsRead(
+				PORT := 851, 
+				DESTADDR := pDataInfo,
+				IDXGRP := 16#F00E,
+				IDXOFFS := 0,
+				LEN := SymbolUploadInfo2.nDatatypeSize,
+				READ := TRUE);
+
+		IF(AdsRead.BUSY = FALSE)THEN			
+			ReadSymbolTableState := RS_PROCESS_DATA_UPLOAD;
+		END_IF
+		
+	RS_PROCESS_DATA_UPLOAD:
+		IF(StateEntry)THEN
+			i := 0;
+			pAdsDatatypeEntry := pDataInfo;
+		END_IF
+		IF (i < SymbolUploadInfo2.nDatatypes-1) THEN
+				
+			AnalyseSymbolTable.AnalyseAdsDatatpe(pAdsDatatypeEntry, '');			
+			
+			i := i + 1;
+			pAdsDatatypeEntry := pAdsDatatypeEntry + pAdsDatatypeEntry^.entryLength;
 		ELSE
 			ReadSymbolTableState := RS_DONE;
 		END_IF
-		
 		
 	RS_DONE:
 		;		
@@ -184,9 +229,7 @@ END_CASE
 
 LogStateChange();
 
-
-gTime := gTime + 1;
-]]></ST>
+gTime := gTime + 1;]]></ST>
     </Implementation>
     <Method Name="LogStateChange" Id="{3e911aee-3a56-48b2-acf3-e97822254fc6}">
       <Declaration><![CDATA[METHOD LogStateChange : BOOL

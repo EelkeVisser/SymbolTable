@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.3">
-  <DUT Name="TAdsSymbolUploadInfo" Id="{88e2b59a-b2f9-4954-83ea-4fbe284a5635}">
-    <Declaration><![CDATA[TYPE TAdsSymbolUploadInfo :
+  <DUT Name="AdsSymbolUploadInfo" Id="{88e2b59a-b2f9-4954-83ea-4fbe284a5635}">
+    <Declaration><![CDATA[TYPE AdsSymbolUploadInfo :
 STRUCT
    nSymbols : UDINT;
    nSymSize : UDINT;
